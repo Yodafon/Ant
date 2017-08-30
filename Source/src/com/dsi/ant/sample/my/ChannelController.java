@@ -18,6 +18,7 @@ package com.dsi.ant.sample.my;
 import android.os.RemoteException;
 import android.util.Log;
 
+import android.util.Pair;
 import com.dsi.ant.channel.AntChannel;
 import com.dsi.ant.channel.AntCommandFailedException;
 import com.dsi.ant.channel.IAntChannelEventHandler;
@@ -30,17 +31,17 @@ import com.dsi.ant.message.fromant.ChannelEventMessage;
 import com.dsi.ant.message.fromant.MessageFromAntType;
 import com.dsi.ant.message.ipc.AntMessageParcel;
 
-import java.util.Random;
+import java.util.*;
 
 public class ChannelController
 {
     // The device type and transmission type to be part of the channel ID message
-    private static final int CHANNEL_PROOF_DEVICE_TYPE = 120;
+    private static final int CHANNEL_PROOF_DEVICE_TYPE = 0;
     private static final int CHANNEL_PROOF_TRANSMISSION_TYPE = 0;
     
     // The period and frequency values the channel will be configured to
-    private static final int CHANNEL_PROOF_PERIOD = 8070; // 1 Hz
-    private static final int CHANNEL_PROOF_FREQUENCY = 57;
+    private static final Set<Pair<Integer,Integer>> CHANNEL_PROOF_PERIOD = new HashSet<>();
+    private static final Set<Integer> CHANNEL_PROOF_FREQUENCY = new HashSet<>();
     
     private static final String TAG = ChannelController.class.getSimpleName();
     
@@ -59,6 +60,17 @@ public class ChannelController
     {
         public abstract void onBroadcastChanged(ChannelInfo newInfo);
     }
+
+
+    static {
+        for (int i = 2; i <= 80; i++) {
+         if(i==50 || i==57) continue;
+            CHANNEL_PROOF_PERIOD.add(new Pair<>(i,1));
+            CHANNEL_PROOF_PERIOD.add(new Pair<>(i,4));
+        }
+
+    }
+
 
     public ChannelController(AntChannel antChannel, boolean isMaster, int deviceId,
             ChannelBroadcastListener broadcastListener)
@@ -94,7 +106,7 @@ public class ChannelController
                 // Channel ID message contains device number, type and transmission type. In 
                 // order for master (TX) channels and slave (RX) channels to connect, they 
                 // must have the same channel ID, or wildcard (0) is used.
-                ChannelId channelId = new ChannelId(mChannelInfo.deviceNumber, 
+                ChannelId channelId = new ChannelId(0,
                         CHANNEL_PROOF_DEVICE_TYPE, CHANNEL_PROOF_TRANSMISSION_TYPE);
                 
                 try
@@ -115,14 +127,28 @@ public class ChannelController
                      * the ANT Protocol Doc found at: 
                      * http://www.thisisant.com/resources/ant-message-protocol-and-usage/
                      */
-                    mAntChannel.setChannelId(channelId);
-                    mAntChannel.setPeriod(CHANNEL_PROOF_PERIOD);
-                    mAntChannel.setRfFrequency(CHANNEL_PROOF_FREQUENCY);
-                    mAntChannel.setSearchTimeout(LowPrioritySearchTimeout.create(30000));
-                    mAntChannel.open();
-                    mIsOpen = true;
 
-                    Log.d(TAG, "Opened channel with device number: " + mChannelInfo.deviceNumber);
+                    Iterator<Pair<Integer, Integer>> iterator = CHANNEL_PROOF_PERIOD.iterator();
+                    Pair<Integer, Integer> next=null;
+                    boolean hasNext = iterator.hasNext();
+                    if(hasNext) {
+                        next = iterator.next();
+
+                    }
+                    if(hasNext) {
+                        mAntChannel.setChannelId(channelId);
+                        mAntChannel.setRfFrequency(next.first);
+                        mChannelInfo.setFrequency(next.first);
+                        mAntChannel.setPeriod(next.second);
+                        mChannelInfo.setPeriod(next.second);
+                        mAntChannel.setSearchTimeout(LowPrioritySearchTimeout.create(2000));
+                        mAntChannel.open();
+                        mIsOpen = true;
+                        iterator.remove();
+                        Log.d(TAG, "Opened channel with device number: " + mChannelInfo.deviceNumber +" Frequency: "+ next.first +"Period: "+ next.second);
+                    }else {
+                        Log.d(TAG, "No more choose ");
+                    }
                 } catch (RemoteException e) {
                     channelError(e);
                 } catch (AntCommandFailedException e) {
@@ -165,13 +191,16 @@ public class ChannelController
             // Switching on message type to handle different types of messages
             switch(messageType)
             {
+
                 // If data message, construct from parcel and update channel data
                 case BROADCAST_DATA:
                     // Rx Data
+                    Logging.appendLog("Frequency: "+mChannelInfo.getFrequency()+ "Period: "+mChannelInfo.getPeriod()+"Data:" +Arrays.toString(antParcel.getMessageContent()));
                     updateData(new BroadcastDataMessage(antParcel).getPayload());
                     break;
                 case ACKNOWLEDGED_DATA:
                     // Rx Data
+                    Logging.appendLog("Frequency: "+mChannelInfo.getFrequency()+ "Period: "+mChannelInfo.getPeriod()+"Data:" +Arrays.toString(antParcel.getMessageContent()));
                     updateData(new AcknowledgedDataMessage(antParcel).getPayload());
                     break;
                 case CHANNEL_EVENT:
@@ -215,7 +244,10 @@ public class ChannelController
                     }
                     break;
                 case ANT_VERSION:
-                case BURST_TRANSFER_DATA:
+                case BURST_TRANSFER_DATA:{
+                    Logging.appendLog("Frequency: "+mChannelInfo.getFrequency()+ "Period: "+mChannelInfo.getPeriod()+"Data:" +Arrays.toString(antParcel.getMessageContent()));
+
+                }
                 case CAPABILITIES:
                 case CHANNEL_ID:
                 case CHANNEL_RESPONSE:

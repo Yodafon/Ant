@@ -267,7 +267,7 @@ public class  ChannelService extends Service
             if(null != antChannel)
             {
                     // Constructing a controller that will manage and control the channel
-                channelController = new ChannelController(antChannel, isMaster, 0,
+                channelController = new ChannelController(antChannel, isMaster, id,
                         new ChannelBroadcastListener()
                 {                        
                     @Override

@@ -20,7 +20,9 @@ import com.dsi.ant.message.fromant.DataMessage;
 public class ChannelInfo
 {
     public int deviceNumber;
-    
+    public int frequency;
+    public int period;
+
     /** Master / Slave */
     public final boolean isMaster;
     
@@ -59,5 +61,21 @@ public class ChannelInfo
 
     public void setDeviceNumber(Integer deviceNumber) {
         this.deviceNumber = deviceNumber;
+    }
+
+    public int getFrequency() {
+        return frequency;
+    }
+
+    public void setFrequency(int frequency) {
+        this.frequency = frequency;
+    }
+
+    public int getPeriod() {
+        return period;
+    }
+
+    public void setPeriod(int period) {
+        this.period = period;
     }
 }
