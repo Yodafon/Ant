@@ -17,7 +17,6 @@ package com.dsi.ant.sample.my;
 
 import android.os.RemoteException;
 import android.util.Log;
-
 import android.util.Pair;
 import com.dsi.ant.channel.AntChannel;
 import com.dsi.ant.channel.AntCommandFailedException;
@@ -65,8 +64,8 @@ public class ChannelController
     static {
         for (int i = 2; i <= 80; i++) {
          if(i==50 || i==57) continue;
-            CHANNEL_PROOF_PERIOD.add(new Pair<>(i,1));
-            CHANNEL_PROOF_PERIOD.add(new Pair<>(i,4));
+            CHANNEL_PROOF_PERIOD.add(new Pair<>(i, 32768));
+            CHANNEL_PROOF_PERIOD.add(new Pair<>(i, 8192));
         }
 
     }
@@ -147,7 +146,7 @@ public class ChannelController
                         iterator.remove();
                         Log.d(TAG, "Opened channel with device number: " + mChannelInfo.deviceNumber +" Frequency: "+ next.first +"Period: "+ next.second);
                     }else {
-                        Log.d(TAG, "No more choose ");
+                        Logging.appendLog("No more choose ");
                     }
                 } catch (RemoteException e) {
                     channelError(e);
