@@ -20,6 +20,7 @@ import android.content.*;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.text.Editable;
 import android.util.Log;
 import com.dsi.ant.AntService;
 import com.dsi.ant.channel.*;
@@ -139,14 +140,15 @@ public class  ChannelService extends Service
          */
         ArrayList<ChannelInfo> getCurrentChannelInfoForAllChannels()
         {
+            Editable text = ChannelList.deviceNumber.getText();
             ArrayList<ChannelInfo> retList = new ArrayList<ChannelInfo>();
-            for(int i = 1; i <=  mChannelControllerList.size(); i++)
-            {
-                ChannelController channel = mChannelControllerList.get(i);
-                
+            if (text != null && !text.toString().isEmpty()) {
+                Integer deviceNumber = Integer.valueOf(text.toString());
+
+
+                ChannelController channel = mChannelControllerList.get(deviceNumber);
                 retList.add(channel.getCurrentInfo());
             }
-            
             return retList;
         }
         
@@ -163,7 +165,9 @@ public class  ChannelService extends Service
             List<ChannelInfo> channelList=new ArrayList<>();
             for (Integer i : availableIds) {
             Integer id = i;
-            channelList.add(createNewChannel(false, id));
+                Editable text = ChannelList.deviceNumber.getText();
+
+                channelList.add(createNewChannel(false, Integer.parseInt(text.toString())));
             }
 
             return channelList;
@@ -185,12 +189,15 @@ public class  ChannelService extends Service
     private void closeAllChannels() {
         synchronized (mChannelControllerList)
         {
-            // Closing all channels in the list
-            for(int i = 1; i <=  mChannelControllerList.size(); i++)
-            {
-                mChannelControllerList.get(i).close();
+            Editable text = ChannelList.deviceNumber.getText();
+            if (text != null && text.toString().isEmpty() == false) {
+                Integer deviceNumber = Integer.valueOf(text.toString());
+
+                // Closing all channels in the list
+                mChannelControllerList.get(deviceNumber).close();
             }
-        }
+            }
+
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
@@ -204,16 +211,16 @@ public class  ChannelService extends Service
     private void closeChannel(int id) {
       //  synchronized (mChannelControllerList)
         {
+            int deviceNumber = Integer.parseInt(ChannelList.deviceNumber.getText().toString());
             // Closing all channels in the list
-            for (int i = 1; i <= mChannelControllerList.size(); i++) {
-                if(mChannelControllerList.get(i).getCurrentInfo().deviceNumber==id){
-                    mChannelControllerList.get(i).close();
-                    mChannelControllerList.remove(i);
+
+            if (mChannelControllerList.get(deviceNumber).getCurrentInfo().deviceNumber == deviceNumber) {
+                mChannelControllerList.get(deviceNumber).close();
+                mChannelControllerList.remove(deviceNumber);
                     // Reset the device id counter
-                    availableIds.add(id);
-                    break;
+                availableIds.add(deviceNumber);
                 }
-            }
+
         }
 
 
@@ -243,7 +250,7 @@ public class  ChannelService extends Service
         return mAntChannel;
     }
 
-    public ChannelInfo createNewChannel(final boolean isMaster, Integer id) throws ChannelNotAvailableException, UnsupportedFeatureException {
+    public ChannelInfo createNewChannel(final boolean isMaster, int id) throws ChannelNotAvailableException, UnsupportedFeatureException {
         ChannelController channelController = null;
       
         synchronized(mCreateChannel_LOCK)
@@ -266,7 +273,7 @@ public class  ChannelService extends Service
                     }
                 });
 
-                mChannelControllerList.put(id, channelController);
+                mChannelControllerList.put(Integer.valueOf(ChannelList.deviceNumber.getText().toString()), channelController);
             }
         }
         
@@ -280,20 +287,22 @@ public class  ChannelService extends Service
 
         synchronized(mCreateChannel_LOCK)
         {
-
+            Editable text = ChannelList.deviceNumber.getText();
+            Integer deviceNumber = Integer.valueOf(text.toString());
             // Acquiring a channel from ANT Radio Service
             AntChannel antChannel = acquireChannel();
 
 
             int newId = new Random().nextInt(200);
 
-            channelController = mChannelControllerList.get(id);
+            channelController = mChannelControllerList.get(deviceNumber);
             // Constructing a controller that will manage and control the channel
             channelController.setmAntChannel(antChannel);
             channelController.getCurrentInfo().setDeviceNumber(newId);
-            channelController.openChannel();
 
-            mChannelControllerList.put(id, channelController);
+            channelController.openChannel(deviceNumber);
+
+            mChannelControllerList.put(deviceNumber, channelController);
             }
 
 

@@ -69,11 +69,11 @@ public class ChannelController
         mChannelInfo = new ChannelInfo(deviceId, isMaster, 256);
         mChannelBroadcastListener = broadcastListener;
 
-        openChannel();
+        openChannel(deviceId);
     }
-    
-    
-    boolean openChannel()
+
+
+    boolean openChannel(int deviceNumber)
     {
         if(null != mAntChannel)
         {
@@ -338,7 +338,9 @@ public class ChannelController
 
 
                     if (blockSize == blockCounter) {
-
+                        //send response
+                        //same bacon
+                        //0x8D command
                     }
 
 //                    byte[] bytes1 = {0x44,0x09, (byte)0xFF,(byte)0xFF,0x00, 0x00,0x00,0x00};

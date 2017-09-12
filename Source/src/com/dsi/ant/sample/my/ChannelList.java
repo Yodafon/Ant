@@ -46,7 +46,7 @@ public class ChannelList extends Activity {
     private Map<Integer,Integer> mIdChannelListIndexMap = new HashMap<>();
     private int counter=0;
     private boolean mChannelServiceBound = false;
-    
+    public static EditText deviceNumber;
     private void initButtons()
     {
 
@@ -155,6 +155,8 @@ public class ChannelList extends Activity {
         setContentView(R.layout.activity_channel_list);
         
         initPrefs();
+
+        deviceNumber = (EditText) findViewById(R.id.devicenumber);
 
         mChannelListAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, mChannelDisplayList);
         ListView listView_channelList = (ListView)findViewById(R.id.listView_channelList);
