@@ -15,28 +15,17 @@
  */
 package com.dsi.ant.sample.my;
 
-import android.nfc.Tag;
-import android.os.Parcel;
-import com.dsi.ant.channel.*;
-import com.dsi.ant.sample.my.ChannelController.ChannelBroadcastListener;
-
-import com.dsi.ant.AntService;
-
 import android.app.Service;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.ServiceConnection;
+import android.content.*;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
-import android.util.SparseArray;
+import com.dsi.ant.AntService;
+import com.dsi.ant.channel.*;
+import com.dsi.ant.sample.my.ChannelController.ChannelBroadcastListener;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 public class  ChannelService extends Service
 {
@@ -168,15 +157,12 @@ public class  ChannelService extends Service
          * @return The info for the newly acquired and added channel
          * @throws ChannelNotAvailableException
          */
-        List<ChannelInfo> addNewChannel(final boolean isReopen) throws ChannelNotAvailableException
-        {
+        List<ChannelInfo> addNewChannel(final boolean isReopen) throws ChannelNotAvailableException, UnsupportedFeatureException {
 
-            Log.v(TAG,"Before Add new item "+Arrays.toString(availableIds.toArray()));
 
             List<ChannelInfo> channelList=new ArrayList<>();
             for (Integer i : availableIds) {
             Integer id = i;
-            Log.v(TAG, "Added: "+id);
             channelList.add(createNewChannel(false, id));
             }
 
@@ -205,6 +191,11 @@ public class  ChannelService extends Service
                 mChannelControllerList.get(i).close();
             }
         }
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         
         // Reset the device id counter
        // doInitializeIds();
@@ -218,20 +209,17 @@ public class  ChannelService extends Service
                 if(mChannelControllerList.get(i).getCurrentInfo().deviceNumber==id){
                     mChannelControllerList.get(i).close();
                     mChannelControllerList.remove(i);
-                    Log.v(TAG,"ControllerRemoved: deviceNmber"+id+", listId"+i);
                     // Reset the device id counter
                     availableIds.add(id);
                     break;
                 }
             }
-            Log.v(TAG,Arrays.toString(availableIds.toArray()));
         }
 
 
     }
 
-    AntChannel acquireChannel() throws ChannelNotAvailableException
-    {
+    AntChannel acquireChannel() throws ChannelNotAvailableException, UnsupportedFeatureException {
         AntChannel mAntChannel = null;
         if(null != mAntChannelProvider)
         {
@@ -246,7 +234,7 @@ public class  ChannelService extends Service
                  * acquireChannel(context, PredefinedNetwork,
                  * requiredCapabilities, desiredCapabilities).
                  */
-                mAntChannel = mAntChannelProvider.acquireChannel(this, PredefinedNetwork.PUBLIC);
+                mAntChannel = mAntChannelProvider.acquireChannel(this, PredefinedNetwork.ANT_FS);
             } catch (RemoteException e)
             {
                 die("ACP Remote Ex");
@@ -254,9 +242,8 @@ public class  ChannelService extends Service
         }
         return mAntChannel;
     }
-    
-    public ChannelInfo createNewChannel(final boolean isMaster, Integer id) throws ChannelNotAvailableException
-    {
+
+    public ChannelInfo createNewChannel(final boolean isMaster, Integer id) throws ChannelNotAvailableException, UnsupportedFeatureException {
         ChannelController channelController = null;
       
         synchronized(mCreateChannel_LOCK)
@@ -288,8 +275,7 @@ public class  ChannelService extends Service
         return channelController.getCurrentInfo();
     }
 
-    public ChannelInfo openNewChannel(final boolean isMaster, Integer id) throws ChannelNotAvailableException
-    {
+    public ChannelInfo openNewChannel(final boolean isMaster, Integer id) throws ChannelNotAvailableException, UnsupportedFeatureException {
         ChannelController channelController;
 
         synchronized(mCreateChannel_LOCK)
@@ -361,8 +347,7 @@ public class  ChannelService extends Service
     
     private void doBindAntRadioService()
     {
-        if(BuildConfig.DEBUG) Log.v(TAG, "doBindAntRadioService");
-        
+
         // Start listing for channel available intents
         registerReceiver(mChannelProviderStateChangedReceiver, new IntentFilter(AntChannelProvider.ACTION_CHANNEL_PROVIDER_STATE_CHANGED));
         
@@ -373,8 +358,7 @@ public class  ChannelService extends Service
     
     private void doUnbindAntRadioService()
     {
-        if(BuildConfig.DEBUG) Log.v(TAG, "doUnbindAntRadioService");
-        
+
         // Stop listing for channel available intents
         try{
             unregisterReceiver(mChannelProviderStateChangedReceiver);
@@ -413,13 +397,13 @@ public class  ChannelService extends Service
     private void doInitializeIds() {
         availableIds.clear();
         availableIds.add(1);
-        availableIds.add(2);
-        availableIds.add(3);
-        availableIds.add(4);
-        availableIds.add(5);
-        availableIds.add(6);
-        availableIds.add(7);
-        availableIds.add(8);
+//        availableIds.add(2);
+//        availableIds.add(3);
+//        availableIds.add(4);
+//        availableIds.add(5);
+//        availableIds.add(6);
+//        availableIds.add(7);
+//        availableIds.add(8);
     }
 
     @Override

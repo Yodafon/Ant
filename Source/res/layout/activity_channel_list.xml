@@ -15,10 +15,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent" 
-    android:orientation="vertical">
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+              android:orientation="vertical" android:weightSum="1">
 
     <LinearLayout
         android:layout_width="fill_parent"
@@ -68,10 +67,16 @@ limitations under the License.
 
     
     <ListView
-        android:id="@+id/listView_channelList"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
+            android:id="@+id/listView_channelList"
+            android:layout_width="fill_parent"
+            android:layout_height="276dp">
     </ListView>
-    
+    <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:ems="10"
+            android:id="@+id/devicenumber" android:hint="26583" android:textAlignment="center"/>
+
 
 </LinearLayout>

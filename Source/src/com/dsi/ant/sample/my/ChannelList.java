@@ -15,30 +15,18 @@
  */
 package com.dsi.ant.sample.my;
 
-import android.os.RemoteException;
-import com.dsi.ant.channel.AntCommandFailedException;
-import com.dsi.ant.channel.ChannelNotAvailableException;
-import com.dsi.ant.sample.my.ChannelService.ChannelChangedListener;
-import com.dsi.ant.sample.my.ChannelService.ChannelServiceComm;
-
 import android.app.Activity;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
-import android.content.SharedPreferences;
+import android.content.*;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
-import android.util.SparseArray;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.ListView;
-import android.widget.Toast;
-import android.widget.ToggleButton;
+import android.widget.*;
+import com.dsi.ant.channel.ChannelNotAvailableException;
+import com.dsi.ant.channel.UnsupportedFeatureException;
+import com.dsi.ant.sample.my.ChannelService.ChannelChangedListener;
+import com.dsi.ant.sample.my.ChannelService.ChannelServiceComm;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,8 +49,7 @@ public class ChannelList extends Activity {
     
     private void initButtons()
     {
-        Log.v(TAG, "initButtons...");
-        
+
         //Register Master/Slave Toggle handler
         ToggleButton toggleButton_MasterSlave = (ToggleButton)findViewById(R.id.toggleButton_MasterSlave);
         toggleButton_MasterSlave.setEnabled(mChannelServiceBound);
@@ -101,26 +88,22 @@ public class ChannelList extends Activity {
             }
         });
         
-        Log.v(TAG, "...initButtons");
     }
     
     private void initPrefs()
     {
-        Log.v(TAG, "initPrefs...");
-        
+
         // Retrieves the app's current state of channel transmission mode 
         // from preferences to handle app resuming.
         SharedPreferences preferences = getPreferences(MODE_PRIVATE);
         
         mCreateChannelAsMaster = preferences.getBoolean(PREF_TX_BUTTON_CHECKED_KEY, true);
         
-        Log.v(TAG, "...initPrefs");
     }
     
     private void savePrefs()
     {
-        Log.v(TAG, "savePrefs...");
-        
+
         // Saves the app's current state of channel transmission mode to preferences
         SharedPreferences preferences = getPreferences(MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
@@ -129,13 +112,11 @@ public class ChannelList extends Activity {
         
         editor.commit();
         
-        Log.v(TAG, "...savePrefs");
     }
     
     private void doBindChannelService()
     {
-        Log.v(TAG, "doBindChannelService...");
-        
+
         // Binds to ChannelService. ChannelService binds and manages connection between the 
         // app and the ANT Radio Service
         Intent bindIntent = new Intent(this, ChannelService.class);
@@ -144,16 +125,13 @@ public class ChannelList extends Activity {
         
         if(!mChannelServiceBound)   //If the bind returns false, run the unbind method to update the GUI
             doUnbindChannelService();
-        
-        Log.i(TAG, "  Channel Service binding = "+ mChannelServiceBound);
-        
-        Log.v(TAG, "...doBindChannelService");
+
+
     }
     
     private void doUnbindChannelService()
     {
-        Log.v(TAG, "doUnbindChannelService...");
-        
+
         if(mChannelServiceBound)
         {
             unbindService(mChannelServiceConnection);
@@ -165,15 +143,13 @@ public class ChannelList extends Activity {
         ((Button)findViewById(R.id.button_AddChannel)).setEnabled(false);
         ((Button)findViewById(R.id.toggleButton_MasterSlave)).setEnabled(false);
         
-        Log.v(TAG, "...doUnbindChannelService");
     }
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
-        Log.v(TAG, "onCreate...");
-        
+
+
         mChannelServiceBound = false;
         
         setContentView(R.layout.activity_channel_list);
@@ -188,7 +164,6 @@ public class ChannelList extends Activity {
         
         initButtons();
         
-        Log.v(TAG, "...onCreate");
     }
     
     public void onBack() {
@@ -198,8 +173,7 @@ public class ChannelList extends Activity {
     @Override
     public void onDestroy()
     {
-        Log.v(TAG, "onDestroy...");
-        
+
         doUnbindChannelService();
         
         if(isFinishing()) 
@@ -210,9 +184,8 @@ public class ChannelList extends Activity {
         mChannelServiceConnection = null;
 
         savePrefs();
-        
-        Log.v(TAG, "...onDestroy");
-        
+
+
         super.onDestroy();
     }
 
@@ -222,8 +195,7 @@ public class ChannelList extends Activity {
         @Override
         public void onServiceConnected(ComponentName name, IBinder serviceBinder)
         {
-            Log.v(TAG, "mChannelServiceConnection.onServiceConnected...");
-            
+
             mChannelService = (ChannelServiceComm) serviceBinder;
             
             // Sets a listener that handles channel events
@@ -276,14 +248,12 @@ public class ChannelList extends Activity {
 
             refreshList();
 
-            Log.v(TAG, "...mChannelServiceConnection.onServiceConnected");
         }
         
         @Override
         public void onServiceDisconnected(ComponentName arg0)
         {
-            Log.v(TAG, "mChannelServiceConnection.onServiceDisconnected...");
-            
+
             // Clearing and disabling when disconnecting from ChannelService
             mChannelService = null;
             
@@ -291,7 +261,6 @@ public class ChannelList extends Activity {
             ((Button)findViewById(R.id.button_AddChannel)).setEnabled(false);
             ((Button)findViewById(R.id.toggleButton_MasterSlave)).setEnabled(false);
             
-            Log.v(TAG, "...mChannelServiceConnection.onServiceDisconnected");
         }
     };
     
@@ -308,15 +277,18 @@ public class ChannelList extends Activity {
                 // in ChannelService contains code required to acquire an ANT
                 // channel from ANT Radio Service.
                 newChannelInfo = mChannelService.addNewChannel(isReopen);
-            } catch (ChannelNotAvailableException e)
-            {
+            } catch (ChannelNotAvailableException e) {
                 // Occurs when a channel is not available. Printing out the
                 // stack trace will show why no channels are available.
                 Toast.makeText(this, "Channel Not Available", Toast.LENGTH_SHORT).show();
                 Log.e(TAG, "Channel not available", e);
                 return;
+            } catch (UnsupportedFeatureException e) {
+                Toast.makeText(this, "Channel Not Available", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Channel not available", e);
+                return;
             }
-            
+
             if(null != newChannelInfo)
             {
                 // Adding new channel info to the list
@@ -325,7 +297,6 @@ public class ChannelList extends Activity {
             }
         }
         
-        Log.v(TAG, "...addNewChannel");
     }
     
     private void refreshList()
@@ -346,7 +317,6 @@ public class ChannelList extends Activity {
         for (ChannelInfo channelInfo : channelInfoList) {
             mIdChannelListIndexMap.put(channelInfo.deviceNumber, mChannelDisplayList.size());
             mChannelDisplayList.add(getDisplayText(channelInfo));
-            Log.v(TAG, "addChannelToList: "+channelInfo.deviceNumber);
 
         }
 
@@ -379,8 +349,7 @@ public class ChannelList extends Activity {
     
 
     private void clearAllChannels() {
-        Log.v(TAG, "clearAllChannels...");
-        
+
         if(null != mChannelService)
         {
             // Telling ChannelService to close all the channels
@@ -392,6 +361,5 @@ public class ChannelList extends Activity {
             counter=0;
         }
         
-        Log.v(TAG, "...clearAllChannels");
     }
 }
