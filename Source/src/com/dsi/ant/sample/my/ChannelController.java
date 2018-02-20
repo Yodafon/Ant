@@ -29,42 +29,40 @@ import com.dsi.ant.message.ipc.AntMessageParcel;
 
 import java.util.Random;
 
-public class ChannelController
-{
+public class ChannelController {
     // The device type and transmission type to be part of the channel ID message
 
     // The period and frequency values the channel will be configured to
 
     private static final String TAG = ChannelController.class.getSimpleName();
-    
+
     private static Random randGen = new Random();
-    
+
     private AntChannel mAntChannel;
     private ChannelBroadcastListener mChannelBroadcastListener;
-    
+
     private ChannelEventCallback mChannelEventCallback = new ChannelEventCallback();
 
     private ChannelInfo mChannelInfo;
-    
+
     private boolean mIsOpen;
     private byte[] lastMessage;
     private boolean linkHasSent = false;
     private boolean authHasSent = false;
     private int blockSize = 0;
     private int blockCounter = 0;
+    private static byte data_block_size_high;
+    private static byte data_block_size_low;
+    private static byte data_offset_low;
+    private static byte data_offset_high;
 
-    static public abstract class ChannelBroadcastListener
-    {
+    static public abstract class ChannelBroadcastListener {
         public abstract void onBroadcastChanged(ChannelInfo newInfo);
     }
 
 
-
-
-
     public ChannelController(AntChannel antChannel, boolean isMaster, int deviceId,
-            ChannelBroadcastListener broadcastListener)
-    {
+                             ChannelBroadcastListener broadcastListener) {
         mAntChannel = antChannel;
         mChannelInfo = new ChannelInfo(deviceId, isMaster, 256);
         mChannelBroadcastListener = broadcastListener;
@@ -73,16 +71,11 @@ public class ChannelController
     }
 
 
-    boolean openChannel(int deviceNumber)
-    {
-        if(null != mAntChannel)
-        {
-            if(mIsOpen)
-            {
+    boolean openChannel(int deviceNumber) {
+        if (null != mAntChannel) {
+            if (mIsOpen) {
                 Log.w(TAG, "Channel was already open");
-            }
-            else
-            {
+            } else {
                 /*
                  * Although this reference code sets ChannelType to either a transmitting master or a receiving slave,
                  * the standard for ANT is that channels communication is bidirectional. The use of single-direction 
@@ -97,9 +90,8 @@ public class ChannelController
                 // must have the same channel ID, or wildcard (0) is used.
                 ChannelId channelId = new ChannelId(26583,
                         1, 5);
-                
-                try
-                {
+
+                try {
                     // Setting the channel event handler so that we can receive messages from ANT
                     mAntChannel.setChannelEventHandler(mChannelEventCallback);
 
@@ -118,14 +110,14 @@ public class ChannelController
                      */
 
 
-                        mAntChannel.setChannelId(channelId);
+                    mAntChannel.setChannelId(channelId);
                     mAntChannel.setRfFrequency(50);
                     mChannelInfo.setFrequency(50);
                     mAntChannel.setPeriod(4096);
                     mAntChannel.disableEventBuffer();
                     mChannelInfo.setPeriod(4096);
-                        mAntChannel.open();
-                        mIsOpen = true;
+                    mAntChannel.open();
+                    mIsOpen = true;
                     Log.d(TAG, "Opened channel with device number: " + mChannelInfo.deviceNumber + " Frequency: " + 50 + "Period: " + 4096);
                 } catch (RemoteException e) {
                     channelError(e);
@@ -134,12 +126,10 @@ public class ChannelController
                     channelError("Open failed", e);
                 }
             }
-        }
-        else
-        {
+        } else {
             Log.w(TAG, "No channel available");
         }
-        
+
         return mIsOpen;
     }
 
@@ -147,8 +137,7 @@ public class ChannelController
      * Implements the Channel Event Handler Interface so that messages can be
      * received and channel death events can be handled.
      */
-    public class ChannelEventCallback implements IAntChannelEventHandler
-    {
+    public class ChannelEventCallback implements IAntChannelEventHandler {
 
         private void updateData(byte[] data) {
             mChannelInfo.broadcastData = data;
@@ -157,19 +146,17 @@ public class ChannelController
         }
 
         @Override
-        public void onChannelDeath()
-        {
+        public void onChannelDeath() {
             // Display channel death message when channel dies
             displayChannelError("Channel Death");
         }
-        
+
         @Override
         public void onReceiveMessage(MessageFromAntType messageType, AntMessageParcel antParcel) {
 
 
             // Switching on message type to handle different types of messages
-            switch(messageType)
-            {
+            switch (messageType) {
 
                 // If data message, construct from parcel and update channel data
                 case BROADCAST_DATA:
@@ -181,28 +168,12 @@ public class ChannelController
                             //sendRequestBaconAsAck();
                             Log.v(TAG, "Link state");
                             sendLinkCommandAsAck();
-                            setChannelPeriod(65535);
+//                            setChannelPeriod(65535);
 
 
                             linkHasSent = true;
                         }
 
-//                    if(antParcel.getMessageContent()[1]==0x43 && antParcel.getMessageContent()[2]==0x20 && antParcel.getMessageContent()[3]==0x02) {  //auth state bacon
-//                        byte[] bytes1 = {0x44,0x09, (byte)0xFF,(byte)0xFF,0x00, 0x00,0x00,0x00};
-//                    byte[] bytes2 = {0x00,0x01, 0x00,(byte)0x00, 0x00, 0x00,0x00,0x00};
-//                    try {
-//                        mAntChannel.burstTransfer(bytes1);
-//                        Thread.sleep(500);
-//                        mAntChannel.burstTransfer(bytes2);
-//                        Thread.sleep(500);
-//                    } catch (RemoteException e) {
-//                        e.printStackTrace();
-//                    } catch (AntCommandFailedException e) {
-//                        e.printStackTrace();
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                    }
 
                     updateData(new BroadcastDataMessage(antParcel).getPayload());
                     break;
@@ -210,13 +181,6 @@ public class ChannelController
                     // Rx Data
                     Logging.appendLog(messageType.name() + ", Frequency: " + mChannelInfo.getFrequency() + ",Period: " + mChannelInfo.getPeriod() + ",Data:" + bytesToHex(antParcel.getMessageContent()));
                     Log.v(TAG, messageType.name() + ", Frequency: " + mChannelInfo.getFrequency() + ",Period: " + mChannelInfo.getPeriod() + ",Data:" + bytesToHex(antParcel.getMessageContent()));
-//                    updateData(new AcknowledgedDataMessage(antParcel).getPayload());
-//                    try {
-//                        // Setting the data to be broadcast on the next channel period
-//                        mAntChannel.setBroadcastData(mChannelInfo.broadcastData);
-//                    } catch (RemoteException e) {
-//                        channelError(e);
-//                    }
                     break;
                 case CHANNEL_EVENT:
                     // Constructing channel event message from parcel
@@ -268,13 +232,9 @@ public class ChannelController
                             Logging.appendLog(eventMessage.getEventCode().name() + ", Frequency: " + mChannelInfo.getFrequency() + ",Period: " + mChannelInfo.getPeriod() + ",Data:" + bytesToHex(antParcel.getMessageContent()));
                             Log.v(TAG, eventMessage.getEventCode().name() + ", Frequency: " + mChannelInfo.getFrequency() + ",Period: " + mChannelInfo.getPeriod() + ",Data:" + bytesToHex(antParcel.getMessageContent()));
                             if (linkHasSent == false) {
-//                                if(antParcel.getMessageContent()[1]==0x43 && antParcel.getMessageContent()[2]==0x24 && antParcel.getMessageContent()[3]==0x01) {  //auth state bacon
-
                                 linkHasSent = true;
                             }
                             if (authHasSent == false) {
-//                                if(antParcel.getMessageContent()[1]==0x43 && antParcel.getMessageContent()[2]==0x24 && antParcel.getMessageContent()[3]==0x01) {  //auth state bacon
-
                                 authHasSent = true;
                             }
 
@@ -289,7 +249,6 @@ public class ChannelController
                                 e.printStackTrace();
                             }
                             if (authHasSent == false) {
-//                                if(antParcel.getMessageContent()[1]==0x43 && antParcel.getMessageContent()[2]==0x24 && antParcel.getMessageContent()[3]==0x01) {  //auth state bacon
                                 Log.v(TAG, "Auth state");
                                 authHasSent = true;
                                 sendAuthCommandAsAck();
@@ -323,36 +282,47 @@ public class ChannelController
                 case ANT_VERSION: {
                     break;
                 }
-                case BURST_TRANSFER_DATA:{
+                case BURST_TRANSFER_DATA: {
 
                     Logging.appendLog(messageType.name() + ", Frequency: " + mChannelInfo.getFrequency() + ",Period: " + mChannelInfo.getPeriod() + ",Data:" + bytesToHex(antParcel.getMessageContent()));
-                    Log.v(TAG, messageType.name() + ", Frequency: " + mChannelInfo.getFrequency() + ",Period: " + mChannelInfo.getPeriod() + ",Data:" + bytesToHex(antParcel.getMessageContent()));
-                    if (antParcel.getMessageContent()[1] == 0x43 && antParcel.getMessageContent()[2] == 0x20 && antParcel.getMessageContent()[3] == 0x02) {  //transport state bacon
+                    Log.v(TAG, messageType.name() + ", Frequency: " + mChannelInfo.getFrequency() + ",Period: " + mChannelInfo.getPeriod() + ",Data:" + antParcel.getMessageContentString());
+                    if (antParcel.getMessageContent()[1] == 0x43 && antParcel.getMessageContent()[2] == 0x24 && antParcel.getMessageContent()[3] == 0x02) {  //transport state bacon
                         Log.v(TAG, "Transport state");
+                    } else {
+                        blockCounter++;
                     }
-                    if (antParcel.getMessageContent()[1] == 0x44 && antParcel.getMessageContent()[2] == 0x0D && antParcel.getMessageContent()[3] == 0xFF && antParcel.getMessageContent()[4] == 0xFF) {  //transport state bacon
-                        blockSize = (antParcel.getMessageContent()[8] << 16) & antParcel.getMessageContent()[7];
+                    if (antParcel.getMessageContent()[1] == 0x44 && antParcel.getMessageContent()[2] == 0x0D && antParcel.getMessageContent()[3] == (byte) 0xFF && antParcel.getMessageContent()[4] == (byte) 0xFF) {  //transport state bacon
+                        data_block_size_high = antParcel.getMessageContent()[8];
+                        data_block_size_low = antParcel.getMessageContent()[7];
+                        data_offset_low = antParcel.getMessageContent()[5];
+                        data_offset_high = antParcel.getMessageContent()[6];
+
+                        blockSize = data_block_size_high << 16 | data_block_size_low;
                     }
 
-                    blockCounter++;
-
-
-                    if (blockSize == blockCounter) {
+                    Log.v(TAG, "Block size: " + blockSize + " Block counter: " + blockCounter);
+//                    if (blockSize > 0 && blockCounter != 0 && blockCounter - blockSize == -1) {
+                    if (antParcel.getMessageContent()[0] == (byte) 0xE0) {
+//                        data_offset_low = (byte) ((byte) 0xFF & (blockCounter * 8));
+//                        data_offset_high = (byte) ((blockCounter * 8) >> 8);
                         //send response
                         //same bacon
                         //0x8D command
-                    }
+                        byte[] bacon = {(byte) 0xE0, (byte) 0x44, (byte) 0x8D, (byte) 0xFF, (byte) 0xFF, data_offset_low, data_offset_high, data_block_size_low, data_block_size_high};
 
-//                    byte[] bytes1 = {0x44,0x09, (byte)0xFF,(byte)0xFF,0x00, 0x00,0x00,0x00};
-//                    byte[] bytes2 = {0x00,0x01, 0x00,(byte)0x00, 0x00, 0x00,0x00,0x00};
-//                    try {
-//                        mAntChannel.burstTransfer(bytes1);
-//                        mAntChannel.burstTransfer(bytes2);
-//                    } catch (RemoteException e) {
-//                        e.printStackTrace();
-//                    } catch (AntCommandFailedException e) {
-//                        e.printStackTrace();
-//                    }
+
+                        try
+
+                        {
+                            mAntChannel.burstTransfer(bacon);
+                        } catch (RemoteException | AntCommandFailedException e)
+
+                        {
+                            e.printStackTrace();
+                        }
+                        Log.v(TAG, "Send response: " + messageType.name() + ", Frequency: " + mChannelInfo.getFrequency() + ",Period: " + mChannelInfo.getPeriod() + ",Data:" + bytesToHex(bacon));
+
+                    }
                     break;
                 }
                 case CAPABILITIES:
@@ -370,6 +340,7 @@ public class ChannelController
                     Log.v(TAG, messageType.name() + ", Frequency: " + mChannelInfo.getFrequency() + ",Period: " + mChannelInfo.getPeriod() + ",Data:" + bytesToHex(antParcel.getMessageContent()));
                     break;
             }
+            new Random().nextInt()
         }
     }
 
@@ -414,7 +385,7 @@ public class ChannelController
     }
 
     private void sendLinkCommandAsAck() {
-        byte[] bytes = {0x44, 0x02, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00};
+        byte[] bytes = {0x44, 0x02, 0x32, 0x04, 0x00, 0x00, 0x00, 0x00};
         lastMessage = bytes;
         Thread thread = new Thread() {
             @Override
@@ -444,27 +415,25 @@ public class ChannelController
         this.mAntChannel = mAntChannel;
     }
 
-    public ChannelInfo getCurrentInfo()
-    {
+    public ChannelInfo getCurrentInfo() {
         return mChannelInfo;
     }
-    
-    void displayChannelError(String displayText)
-    {
+
+    void displayChannelError(String displayText) {
         mChannelInfo.die(displayText);
         mChannelBroadcastListener.onBroadcastChanged(mChannelInfo);
     }
-    void displayChannelClose(String displayText)
-    {
+
+    void displayChannelClose(String displayText) {
         mChannelInfo.die(displayText);
         mChannelBroadcastListener.onBroadcastChanged(mChannelInfo);
     }
-    
+
     void channelError(RemoteException e) {
         String logString = "Remote service communication failed.";
-                
+
         Log.e(TAG, logString);
-        
+
         displayChannelError(logString);
     }
 
@@ -480,54 +449,61 @@ public class ChannelController
         }
         return new String(hexChars);
     }
-    
+
     void channelError(String error, AntCommandFailedException e) {
         StringBuilder logString;
-        
-        if(e.getResponseMessage() != null) {
-            String initiatingMessageId = "0x"+ Integer.toHexString(
+
+        if (e.getResponseMessage() != null) {
+            String initiatingMessageId = "0x" + Integer.toHexString(
                     e.getResponseMessage().getInitiatingMessageId());
-            String rawResponseCode = "0x"+ Integer.toHexString(
+            String rawResponseCode = "0x" + Integer.toHexString(
                     e.getResponseMessage().getRawResponseCode());
-            
+
             logString = new StringBuilder(error)
                     .append(". Command ")
                     .append(initiatingMessageId)
                     .append(" failed with code ")
                     .append(rawResponseCode);
         } else {
-            String attemptedMessageId = "0x"+ Integer.toHexString(
+            String attemptedMessageId = "0x" + Integer.toHexString(
                     e.getAttemptedMessageType().getMessageId());
             String failureReason = e.getFailureReason().toString();
-            
+
             logString = new StringBuilder(error)
-            .append(". Command ")
-            .append(attemptedMessageId)
-            .append(" failed with reason ")
-            .append(failureReason);
+                    .append(". Command ")
+                    .append(attemptedMessageId)
+                    .append(" failed with reason ")
+                    .append(failureReason);
         }
-                
+
         Log.e(TAG, logString.toString());
-        
-        mAntChannel=null;
-        
+
+        mAntChannel = null;
+
         displayChannelError("ANT Command Failed");
     }
-    
-    public void close()  {
+
+    public void close() {
         // TODO kill all our resources
-        if (null != mAntChannel)
-        {
+        if (null != mAntChannel) {
 
             mIsOpen = false;
-            
+            data_offset_high = 0;
+            data_offset_low = 0;
+            data_block_size_high = 0;
+            data_block_size_low = 0;
+            blockCounter = 0;
+            authHasSent = false;
+            linkHasSent = false;
+            blockSize = 0;
+
             // Releasing the channel to make it available for others. 
             // After releasing, the AntChannel instance cannot be reused.
-           mAntChannel.release();
+            mAntChannel.release();
 
         }
 
-        Log.d("Close:","Channel Closed");
+        Log.d("Close:", "Channel Closed");
         //displayChannelClose("Channel Closed");
     }
 }
